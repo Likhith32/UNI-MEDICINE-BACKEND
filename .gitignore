@@ -1,0 +1,22 @@
+# Virtual environment
+venv/
+env/
+__pycache__/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+
+# ML / Torch / CV
+*.pt
+*.pth
+*.onnx
+*.dll
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
