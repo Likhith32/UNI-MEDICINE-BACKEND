@@ -9,7 +9,8 @@ AI service layer using Google Gemini (FREE TIER).
 import os
 import textwrap
 import logging
-import google.genai as genai
+import google.generativeai as genai
+
 from google.genai import types
 
 
