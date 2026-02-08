@@ -1,22 +1,18 @@
-# Virtual environment
+# Virtual environments
 venv/
 env/
+.venv/
+
+# Python cache
 __pycache__/
-
-# Python
 *.pyc
-*.pyo
-*.pyd
 
-# ML / Torch / CV
+# ML / DL
 *.pt
 *.pth
+*.h5
 *.onnx
-*.dll
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
