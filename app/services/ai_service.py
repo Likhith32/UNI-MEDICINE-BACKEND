@@ -9,9 +9,12 @@ AI service layer using Google Gemini (FREE TIER).
 import os
 import textwrap
 import logging
-import google.generativeai as genai
-
+import os
+import textwrap
+import logging
+from google import genai
 from google.genai import types
+
 
 
 logger = logging.getLogger(__name__)
