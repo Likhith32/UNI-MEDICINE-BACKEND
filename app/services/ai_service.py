@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # ---------------- CONFIG ----------------
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
 
 if not GEMINI_API_KEY:
     logger.error("❌ GEMINI_API_KEY not set")
@@ -41,7 +41,11 @@ STYLE:
 
 # ---------------- CHATBOT ----------------
 def chat_with_ai(user_context: dict, message: str) -> str:
+    """
+    General chatbot for student health queries.
+    """
     student_name = user_context.get("name", "Student")
+    
     prompt = f"""
 {SYSTEM_PROMPT}
 
@@ -64,16 +68,22 @@ def get_disease_info(condition: str) -> str:
     Get general information about a medical condition.
     NOT a diagnosis tool - educational purposes only.
     """
+    if not condition or len(condition.strip()) < 2:
+        return "Please provide a valid condition name."
+    
+    # Sanitize input
+    condition = condition.strip()[:100]
+    
     prompt = f"""
 {SYSTEM_PROMPT}
 
-The student asked about the condition: {condition}
+The student asked about: {condition}
 
 Explain:
-- What it commonly refers to (general info only)
-- Common symptoms (non-diagnostic)
-- When to seek medical help
-- Important disclaimer
+- What it generally refers to (non-diagnostic)
+- Common symptoms
+- When to see a doctor
+- Clear disclaimer
 
 Keep it concise and safe.
 """
@@ -81,6 +91,9 @@ Keep it concise and safe.
 
 # ---------------- IMAGE EXPLANATION ----------------
 def explain_image_prediction(predicted_condition: str, confidence: float) -> str:
+    """
+    Explain an image model's prediction in safe, non-diagnostic terms.
+    """
     prompt = f"""
 {SYSTEM_PROMPT}
 
@@ -89,17 +102,21 @@ Condition: {predicted_condition}
 Confidence: {confidence:.2f}
 
 Explain:
-- What this MAY indicate
+- What this MAY indicate (general info only)
 - Why image models can be wrong
+- Importance of professional diagnosis
 - When to see a doctor
-- Disclaimer
+- Clear disclaimer
 """
     return _call_gemini(prompt)
 
 # ---------------- INTERNAL ----------------
 def _call_gemini(prompt: str) -> str:
+    """
+    Internal function to call Gemini API.
+    """
     if not GEMINI_API_KEY:
-        return "AI service not configured. Please consult a doctor."
+        return "⚠️ AI service not configured. Please consult a doctor or campus health services."
     
     try:
         response = client.models.generate_content(
@@ -111,6 +128,7 @@ def _call_gemini(prompt: str) -> str:
             ),
         )
         return response.text.strip()
-    except Exception:
+    
+    except Exception as e:
         logger.exception("Gemini API failed")
-        return "AI service temporarily unavailable."
+        return "⚠️ AI service temporarily unavailable. Please consult a healthcare professional."
