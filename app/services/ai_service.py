@@ -1,11 +1,9 @@
 """
 Gemini AI Service (TEXT ONLY)
-
 - Uses google-genai (NEW SDK)
 - Safe medical assistant
 - Used by chatbot + image explanation
 """
-
 import os
 import textwrap
 import logging
@@ -15,7 +13,6 @@ from google.genai import types
 logger = logging.getLogger(__name__)
 
 # ---------------- CONFIG ----------------
-
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
@@ -25,7 +22,6 @@ if not GEMINI_API_KEY:
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ---------------- SYSTEM PROMPT ----------------
-
 SYSTEM_PROMPT = textwrap.dedent("""
 You are a SAFE AI medical assistant for university students.
 
@@ -44,10 +40,8 @@ STYLE:
 """).strip()
 
 # ---------------- CHATBOT ----------------
-
 def chat_with_ai(user_context: dict, message: str) -> str:
     student_name = user_context.get("name", "Student")
-
     prompt = f"""
 {SYSTEM_PROMPT}
 
@@ -62,11 +56,30 @@ Respond with:
 3. Red-flag symptoms
 4. Clear disclaimer
 """
+    return _call_gemini(prompt)
 
+# ---------------- DISEASE INFO ----------------
+def get_disease_info(condition: str) -> str:
+    """
+    Get general information about a medical condition.
+    NOT a diagnosis tool - educational purposes only.
+    """
+    prompt = f"""
+{SYSTEM_PROMPT}
+
+The student asked about the condition: {condition}
+
+Explain:
+- What it commonly refers to (general info only)
+- Common symptoms (non-diagnostic)
+- When to seek medical help
+- Important disclaimer
+
+Keep it concise and safe.
+"""
     return _call_gemini(prompt)
 
 # ---------------- IMAGE EXPLANATION ----------------
-
 def explain_image_prediction(predicted_condition: str, confidence: float) -> str:
     prompt = f"""
 {SYSTEM_PROMPT}
@@ -84,11 +97,10 @@ Explain:
     return _call_gemini(prompt)
 
 # ---------------- INTERNAL ----------------
-
 def _call_gemini(prompt: str) -> str:
     if not GEMINI_API_KEY:
         return "AI service not configured. Please consult a doctor."
-
+    
     try:
         response = client.models.generate_content(
             model=GEMINI_MODEL,
@@ -99,7 +111,6 @@ def _call_gemini(prompt: str) -> str:
             ),
         )
         return response.text.strip()
-
     except Exception:
         logger.exception("Gemini API failed")
         return "AI service temporarily unavailable."
