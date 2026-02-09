@@ -1,9 +1,9 @@
 """
-AI service layer using Google Gemini (FREE TIER).
+Gemini AI Service (TEXT ONLY)
 
-- Uses google.genai (NEW SDK)
+- Uses google-genai (NEW SDK)
 - Safe medical assistant
-- Graceful failure handling
+- Used by chatbot + image explanation
 """
 
 import os
@@ -12,49 +12,38 @@ import logging
 from google import genai
 from google.genai import types
 
-
-
 logger = logging.getLogger(__name__)
 
-# -------------------------------------------------
-# CONFIG
-# -------------------------------------------------
+# ---------------- CONFIG ----------------
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
 if not GEMINI_API_KEY:
-    logger.error("❌ GEMINI_API_KEY is NOT set")
+    logger.error("❌ GEMINI_API_KEY not set")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# -------------------------------------------------
-# SYSTEM PROMPT
-# -------------------------------------------------
+# ---------------- SYSTEM PROMPT ----------------
 
 SYSTEM_PROMPT = textwrap.dedent("""
 You are a SAFE AI medical assistant for university students.
 
-IMPORTANT:
-- You are NOT a doctor.
-- You provide health information for awareness only.
-- You must NEVER replace professional medical advice.
-
-STRICT RULES:
-- NEVER give a confirmed diagnosis.
-- NEVER prescribe medicines or dosages.
-- ALWAYS include a medical disclaimer.
-- Encourage consulting a qualified doctor when needed.
+RULES:
+- You are NOT a doctor
+- DO NOT diagnose diseases
+- DO NOT prescribe medicines
+- Give only general guidance
+- Always include a disclaimer
+- Encourage consulting a doctor
 
 STYLE:
 - Simple language
 - Bullet points
-- Calm and reassuring
+- Calm & reassuring
 """).strip()
 
-# -------------------------------------------------
-# PUBLIC FUNCTIONS
-# -------------------------------------------------
+# ---------------- CHATBOT ----------------
 
 def chat_with_ai(user_context: dict, message: str) -> str:
     student_name = user_context.get("name", "Student")
@@ -64,11 +53,11 @@ def chat_with_ai(user_context: dict, message: str) -> str:
 
 Student name: {student_name}
 
-Symptoms described:
+User message:
 \"\"\"{message}\"\"\"
 
 Respond with:
-1. Possible common causes (not a diagnosis)
+1. Possible common causes (not diagnosis)
 2. Safe self-care tips
 3. Red-flag symptoms
 4. Clear disclaimer
@@ -76,31 +65,7 @@ Respond with:
 
     return _call_gemini(prompt)
 
-
-def get_disease_info(disease_name: str) -> dict:
-    disease = disease_name.strip().title()
-
-    prompt = f"""
-{SYSTEM_PROMPT}
-
-Explain the condition: {disease}
-
-Include:
-- Short description
-- Common symptoms
-- Safe self-care
-- When to see a doctor
-- Disclaimer
-"""
-
-    explanation = _call_gemini(prompt)
-
-    return {
-        "name": disease,
-        "explanation": explanation,
-        "note": "This is general information only. NOT a medical diagnosis."
-    }
-
+# ---------------- IMAGE EXPLANATION ----------------
 
 def explain_image_prediction(predicted_condition: str, confidence: float) -> str:
     prompt = f"""
@@ -110,25 +75,19 @@ An image model predicted:
 Condition: {predicted_condition}
 Confidence: {confidence:.2f}
 
-Explain carefully:
+Explain:
 - What this MAY indicate
 - Why image models can be wrong
 - When to see a doctor
 - Disclaimer
 """
-
     return _call_gemini(prompt)
 
-# -------------------------------------------------
-# INTERNAL HELPER
-# -------------------------------------------------
+# ---------------- INTERNAL ----------------
 
 def _call_gemini(prompt: str) -> str:
     if not GEMINI_API_KEY:
-        return (
-            "AI service is not configured. "
-            "Please consult a doctor or campus health center."
-        )
+        return "AI service not configured. Please consult a doctor."
 
     try:
         response = client.models.generate_content(
@@ -139,12 +98,8 @@ def _call_gemini(prompt: str) -> str:
                 max_output_tokens=600,
             ),
         )
-
         return response.text.strip()
 
-    except Exception as e:
-        logger.exception("Gemini API failure")
-        return (
-            "AI service is temporarily unavailable. "
-            "Please try again later or consult a doctor."
-        )
+    except Exception:
+        logger.exception("Gemini API failed")
+        return "AI service temporarily unavailable."
