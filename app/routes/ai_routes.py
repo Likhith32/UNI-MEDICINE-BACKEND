@@ -1,8 +1,10 @@
 from flask import Blueprint, request, jsonify
 import logging
+import os
 
 from app.utils.security import decode_access_token
 from app.services.ai_service import chat_with_ai, get_disease_info
+from app.services.image_service import analyze_image
 from app.services.otc_service import find_best_matches
 
 logger = logging.getLogger(__name__)
@@ -63,7 +65,7 @@ def _build_otc_block(symptom_text, age=None, top_k=3):
 
     try:
         matches = find_best_matches(symptom_text, top_k=top_k)
-    except Exception as e:
+    except Exception:
         logger.exception("OTC engine failure")
         return {
             "symptoms": symptom_text,
@@ -167,3 +169,41 @@ def symptom_otc():
     )
 
     return jsonify(otc_block), 200
+
+# -------------------------------------------------------------------
+# IMAGE ANALYSIS ENDPOINT
+# -------------------------------------------------------------------
+
+@ai_bp.route("/image", methods=["POST"])
+def ai_image():
+    student_payload, error = _get_authenticated_student()
+    if error:
+        return error
+
+    if "image" not in request.files:
+        return jsonify({"error": "Image file is required."}), 400
+
+    image_file = request.files["image"]
+
+    if image_file.filename == "":
+        return jsonify({"error": "Invalid image file."}), 400
+
+    temp_path = f"/tmp/{image_file.filename}"
+    image_file.save(temp_path)
+
+    try:
+        result = analyze_image(
+            file_path=temp_path,
+            user_id=student_payload.get("sub"),
+        )
+    except Exception:
+        logger.exception("Image analysis failed")
+        return jsonify({
+            "error": "Image analysis service is currently unavailable."
+        }), 500
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+    return jsonify(result), 200
+
