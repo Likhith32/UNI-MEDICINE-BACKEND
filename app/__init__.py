@@ -14,11 +14,18 @@ def create_app():
     db.init_app(app)
 
     # Enable CORS
-    CORS(
-        app,
-        resources={r"/api/*": {"origins": "http://localhost:5173"}},
-        supports_credentials=True,
-    )
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://localhost:5173",
+                "https://uni-medicine-frontend-brp2.vercel.app"
+            ]
+        }
+    },
+    supports_credentials=True,
+)
 
     # Initialize Socket.IO
     init_socket(app)
