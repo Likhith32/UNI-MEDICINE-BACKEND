@@ -14,23 +14,23 @@ def create_app():
     db.init_app(app)
 
     # Enable CORS
-CORS(
-    app,
-    resources={
-        r"/api/*": {
-            "origins": [
-                "http://localhost:5173",
-                "https://uni-medicine-frontend-brp2.vercel.app"
-            ]
-        }
-    },
-    supports_credentials=True,
-)
+    CORS(
+        app,
+        resources={
+            r"/api/*": {
+                "origins": [
+                    "http://localhost:5173",
+                    "https://uni-medicine-frontend-brp2.vercel.app"
+                ]
+            }
+        },
+        supports_credentials=True,
+    )
 
     # Initialize Socket.IO
     init_socket(app)
 
-    # Register blueprints (IMPORT INSIDE FUNCTION to avoid circular imports)
+    # Register blueprints
     from app.routes.auth_routes import auth_bp
     from app.routes.ai_routes import ai_bp
     from app.routes.image_routes import image_bp
@@ -43,9 +43,8 @@ CORS(
     app.register_blueprint(image_bp, url_prefix="/api/image")
     app.register_blueprint(places_bp, url_prefix="/api/places")
     app.register_blueprint(doctor_bp, url_prefix="/api/doctor")
-    app.register_blueprint(doctors_bp, url_prefix="/api")  # /api/doctors
+    app.register_blueprint(doctors_bp, url_prefix="/api")
 
-    # Cleanup DB session
     @app.teardown_appcontext
     def shutdown_session(exception=None):
         db.session.remove()
