@@ -80,10 +80,21 @@ def _build_otc_block(symptom_text, age=None, top_k=3):
 
     for cond in matches or []:
         disease_name = cond.get("name", "")
+
+        # 🔥 SAFE disease explanation handling
         try:
-            expl = get_disease_info(disease_name) or {}
+            expl_raw = get_disease_info(disease_name)
         except Exception:
-            expl = {}
+            logger.exception("Disease info fetch failed for %s", disease_name)
+            expl_raw = None
+
+        # Normalize explanation format
+        if isinstance(expl_raw, dict):
+            explanation_text = expl_raw.get("explanation")
+        elif isinstance(expl_raw, str):
+            explanation_text = expl_raw
+        else:
+            explanation_text = None
 
         result_matches.append({
             "slug": cond.get("slug"),
@@ -92,7 +103,7 @@ def _build_otc_block(symptom_text, age=None, top_k=3):
             "recommended_otc_medicines": cond.get("recommended_otc_medicines", []),
             "precautions": cond.get("precautions", []),
             "when_to_see_doctor": cond.get("when_to_see_doctor", []),
-            "llm_explanation": expl.get("explanation"),
+            "llm_explanation": explanation_text,
         })
 
     return {
